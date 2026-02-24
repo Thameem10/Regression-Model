@@ -1,68 +1,39 @@
 import joblib
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
-# ----------------------------
-# Load Model
-# ----------------------------
-
 BASE_DIR = Path(__file__).resolve().parent.parent
-model_path = BASE_DIR / "models" / "gb_regressor_model.pkl"
+MODEL_PATH = BASE_DIR / "models"
 
-model = joblib.load(model_path)
+# 1. Load BOTH the model and the scaler
+model = joblib.load(MODEL_PATH / "house_price_model.pkl")
+scaler = joblib.load(MODEL_PATH / "house_price_scaler.pkl")
+print("Model and Scaler loaded successfully.")
 
-print("Model loaded successfully.")
-
-# ----------------------------
-# Create New Sample Input
-# (Replace values with real data)
-# ----------------------------
-
+# 2. Create New Sample Input
 new_sample = pd.DataFrame(
-    [[
-        3,      # number of bedrooms
-        2,      # number of bathrooms
-        1800,   # living area
-        5000,   # lot area
-        2,      # number of floors
-        0,      # waterfront present
-        2,      # number of views
-        3,      # condition of the house
-        7,      # grade of the house
-        1500,   # area excluding basement
-        300,    # basement area
-        2005,   # built year
-        0,      # renovation year
-        2000,   # living_area_renov
-        5200,   # lot_area_renov
-        3,      # number of schools nearby
-        15      # distance from airport
-    ]],
+    [[3, 2, 1800, 2, 7, 1500, 300, 2000, 52.89]],
     columns=[
-        "number of bedrooms",
-        "number of bathrooms",
-        "living area",
-        "lot area",
-        "number of floors",
-        "waterfront present",
-        "number of views",
-        "condition of the house",
-        "grade of the house",
-        "Area of the house(excluding basement)",
-        "Area of the basement",
-        "Built Year",
-        "Renovation Year",
-        "living_area_renov",
-        "lot_area_renov",
-        "Number of schools nearby",
-        "Distance from the airport"
+        "number of bedrooms", "number of bathrooms", "living area", 
+        "number of floors", "grade of the house", 
+        "Area of the house(excluding basement)", "Area of the basement", 
+        "living_area_renov", "Lattitude"
     ]
 )
 
-# ----------------------------
-# Make Prediction
-# ----------------------------
+# 3. Fix Feature Order (Just in case)
+expected_columns = model.feature_names_in_
+new_sample = new_sample[expected_columns]
 
-predicted_price = model.predict(new_sample)
+# 4. SCALE THE NEW SAMPLE!
+# Notice we use .transform(), NOT .fit_transform()
+# We want to apply the exact same mathematical rules learned during training.
+new_sample_scaled = scaler.transform(new_sample)
 
-print("Predicted House Price:", predicted_price[0])
+# 5. Make Prediction & Convert
+# Pass the SCALED data to the model
+predicted_price_log = model.predict(new_sample_scaled)
+
+
+print(f"\nPredicted House Price: ${predicted_price_log[0]:,.2f}")
